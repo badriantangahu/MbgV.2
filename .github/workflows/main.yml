@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build APK
 
 on:
   push:
@@ -10,34 +10,39 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
+    - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Set up JDK 17
+    - name: Setup Java 17
       uses: actions/setup-java@v4
       with:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@v3
-
-    - name: Unzip project if zipped
+    - name: Ekstrak Project & Setup Env
       run: |
+        sudo apt-get install -y unzip
         if [ -f MBG.zip ]; then
-          unzip MBG.zip
-          cp -rn MBG/* . || true
+          unzip -o MBG.zip
         fi
+        
+        # Buat file .env dari .env.example jika ada
+        if [ -f .env.example ]; then
+          cp .env.example .env
+        fi
+        
+        # Cek jika .env ada di subfolder
+        find . -name ".env.example" -exec sh -c 'cp "$1" "${1%.example}"' _ {} \;
 
-    - name: Make gradlew executable
+    - name: Grant execute permission for gradlew
       run: chmod +x gradlew || true
 
-    - name: Build APK
+    - name: Build with Gradle
       run: |
         if [ -f gradlew ]; then
-          ./gradlew assembleDebug
+          ./gradlew assembleDebug --stacktrace
         else
-          gradle assembleDebug
+          gradle assembleDebug --stacktrace
         fi
 
     - name: Upload APK
